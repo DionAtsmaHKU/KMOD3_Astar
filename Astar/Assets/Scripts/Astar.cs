@@ -1,7 +1,5 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
-using System.Linq;
 
 public class Astar
 {
@@ -13,11 +11,11 @@ public class Astar
     /// <param name="endPos"></param>
     /// <param name="grid"></param>
     /// <returns></returns>
-    public List<Vector2Int> FindPathToTarget(Vector2Int startPos, Vector2Int endPos, Cell[,] grid)
+    public List<Vector2Int> FindPathToTarget(Vector2Int _startPos, Vector2Int _endPos, Cell[,] _grid)
     {
         List<Node> visited = new List<Node>();
 
-        Node startNode = new Node(startPos, null, 0, 0);
+        Node startNode = new Node(_startPos, null, 0, 0);
         List<Node> unvisited = new List<Node>() { startNode };
        // List<Node> unvisited = AddNeighbourNodes(grid, visited, startNode);
 
@@ -27,17 +25,15 @@ public class Astar
             Node current = LowestScore(unvisited);
 
             // Check if end reached
-            if (current.position == endPos)
+            if (current.position == _endPos)
             {
                 Debug.Log("Path Found!");
-                List<Vector2Int> path = ReconstructPath(current);
-                path.Reverse();
-                return path;
+                return ReconstructPath(current);
             }
             unvisited.Remove(current);
             visited.Add(current);
 
-            List<Node> neighbourNodes = AddNeighbourNodes(grid, visited, current);
+            List<Node> neighbourNodes = AddNeighbourNodes(_grid, visited, current);
             foreach (Node n in neighbourNodes)
             {
                 float tentativeGScore = current.GScore + 1;
@@ -48,7 +44,7 @@ public class Astar
                     if (!unvisited.Contains(n))
                     {
                         unvisited.Add(n);
-                        SetHScore(n, endPos);
+                        SetHScore(n, _endPos);
                     }
                 }
             }
@@ -57,7 +53,8 @@ public class Astar
         return null;
     }
 
-    Node LowestScore(List<Node> _unvisited)
+    // Returns the Node with the lowest score in _unvisited
+    private Node LowestScore(List<Node> _unvisited)
     {
         float score = float.MaxValue;
         Node lowestNode = null;
@@ -72,22 +69,25 @@ public class Astar
         return lowestNode;
     }
 
-    void SetHScore(Node n, Vector2 endPos)
+    // Sets the H score using the Manhattan distance
+    private void SetHScore(Node _n, Vector2 _endPos)
     {
-        n.HScore = Mathf.Abs(n.position.x - endPos.x) + Mathf.Abs(n.position.y - endPos.y);
+        _n.HScore = Mathf.Abs(_n.position.x - _endPos.x) + Mathf.Abs(_n.position.y - _endPos.y);
     }
 
-    bool IsVisited(List<Node> _visited, Cell _neighbour)
+    // Returns whether this cell has been visited
+    private bool IsVisited(List<Node> _visited, Cell _cell)
     {
         for (int i = 0; i < _visited.Count; i++)
         {
-            if (_neighbour.gridPosition == _visited[i].position)
+            if (_cell.gridPosition == _visited[i].position)
                 return true;
         }
         return false;
     }
 
-    List<Vector2Int> ReconstructPath(Node _endNode)
+    // Returns the path from start to end
+    private List<Vector2Int> ReconstructPath(Node _endNode)
     {
         List<Vector2Int> path = new List<Vector2Int>();
         Node current = _endNode;
@@ -96,10 +96,12 @@ public class Astar
             path.Add(current.position);
             current = current.parent;
         }
+        path.Reverse();
         return path;
     }
 
-    List<Node> AddNeighbourNodes(Cell[,] _grid, List<Node> _visited, Node _current)
+    // Returns a list of nodes neighbouring _current
+    private List<Node> AddNeighbourNodes(Cell[,] _grid, List<Node> _visited, Node _current)
     {
         Cell currentCell = _grid[_current.position.x, _current.position.y];
         List<Cell> neighbourCells = currentCell.GetNeighbours(_grid);
@@ -116,7 +118,8 @@ public class Astar
         return neighbourNodes;
     }
 
-    List<Cell> AddUnreachableCells(Cell[,] _grid, Cell _current)
+    // Returns a List of unreachable cells
+    private List<Cell> AddUnreachableCells(Cell[,] _grid, Cell _current)
     {
         List<Cell> unreachable = new List<Cell>();
         if (_current.HasWall(Wall.RIGHT) && _current.gridPosition.x + 1 <= _grid.GetLength(0) - 1)
